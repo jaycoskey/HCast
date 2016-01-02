@@ -11,6 +11,8 @@
 import Debug.Trace
 import Numeric
 import Options.Applicative
+import Test.HUnit
+import Test.HUnit.Text
 
 -- ===== AppConfig =====
 data AppConfig = AppConfig
@@ -29,7 +31,7 @@ data AppOptions = AppOptions
 -- TODO: Orthographic, Perspective, Fisheye cameras, etc.
 data Camera = Camera
   { posn :: Pos3
-  , dirn :: Vec3 -- lookAt :: Pos3
+  , dirn :: Vec3  -- lookAt :: Pos3
   , up   :: Vec3
   , hFov :: Double
   }
@@ -57,6 +59,21 @@ showPixel (r, g, b) = (show r ++ " " ++ show g ++ " " ++ show b)
 -- ===== Geometry =====
 type Pos3 = (Double, Double, Double)
 type Vec3 = (Double, Double, Double)
+
+xUnit = (1.0, 0.0, 0.0)
+yUnit = (0.0, 1.0, 0.0)
+zUnit = (0.0, 0.0, 1.0)
+zero3 = (0.0, 0.0, 0.0)
+
+xU = xUnit
+yU = yUnit
+zU = zUnit
+z3 = zero3
+
+eqVec3Eps :: Vec3 -> Vec3 -> Double -> Bool
+eqVec3Eps v1 v2 epsilon = norm2 (v1 <-> v2) < epsilon
+
+degrees = pi / 180.0
 
 debugShowVec3 (a, b, c) = "(" 
                        ++ (showFFloat (Just 2) a "") ++ ", "
@@ -127,6 +144,25 @@ rotateAroundAxisByAngle axis angle v =
               ++ "; result=" ++ (debugShowVec3 result)
               ++ "\n"
 
+eps = 0.0001
+
+-- TODO: Use Test.HUnit.Approx
+testCrossProdX = TestCase $ assertBool "testCrossProdX" $ eqVec3Eps (yU >< zU) xU eps
+testCrossProdY = TestCase $ assertBool "testCrossProdY" $ eqVec3Eps (zU >< xU) yU eps
+testCrossProdZ = TestCase $ assertBool "testCrossProdZ" $ eqVec3Eps (xU >< yU) zU eps
+testCrossProdList = TestList [ TestLabel "testCrossProdX" testCrossProdX
+                             , TestLabel "testCrossProdY" testCrossProdY
+                             , TestLabel "testCrossProdZ" testCrossProdZ
+                             ]
+
+testRotateX = TestCase $ assertBool "testRotateX" $ eqVec3Eps (yU >< zU) xU eps
+testRotateY = TestCase $ assertBool "testRotateY" $ eqVec3Eps (zU >< xU) yU eps
+testRotateZ = TestCase $ assertBool "testRotateZ" $ eqVec3Eps (xU >< yU) zU eps
+testRotateList = TestList [ TestLabel "testRotateX" testRotateX
+                          , TestLabel "testRotateY" testRotateY
+                          , TestLabel "testRotateZ" testRotateZ
+                          ]
+
 debugShowCrossProduct v1 v2 = testResultStr
   where
     result    = v1 >< v2
@@ -163,12 +199,6 @@ debugShowRotations = testResultString
     result2 = debugShowRotation zUnit 90 xUnit  -- Result = yUnit
     result3 = debugShowRotation xUnit 90 yUnit  -- Result = zUnit
     testResultString = result1 ++ result2 ++ result3
-
-xUnit = (1.0, 0.0, 0.0)
-yUnit = (0.0, 1.0, 0.0)
-zUnit = (0.0, 0.0, 1.0)
-
-degrees = pi / 180.0
 
 -- ===== Image =====
 ppm3Body :: Screen -> String
@@ -229,12 +259,12 @@ mkObject shape = Object shape red 1 red
 -- TODO: Efficiency: Groups w/ bounding spheres, kd-trees, etc.
 data Scene = Scene
   { objects :: [Object]
-  , lights :: [Light]
+  , lights  :: [Light]
   }
 
 -- ===== Screen =====
--- Note: For now, this is the prospective place to add super-sampling results.
--- When added, there will be a reduction step between Screen and output Image.
+-- TODO: Add super-sampling in this record,
+--       and add a reduction step between Screen and output Image.
 data Screen = Screen
   { width :: Int
   , height :: Int
@@ -285,6 +315,10 @@ intersect (Sphere pos rad) (Ray { orig=orig, dir=dir }) =
         b = 2 * (dir `dot` delta)
         c = (delta `dot` delta) - rad*rad
         maybeIntersectTime = minQuadraticRoot a b c
+
+intersect (Plane pos norm) (Ray { orig=orig, dir=dir }) =
+    -- TODO: Complete
+    Nothing
 
 intersect _ _ = Nothing
 
@@ -346,17 +380,19 @@ getColor
           targetShape = mkShape headObj
           maybeIntersection = intersect targetShape ray
 
-scene = Scene { objects = [ mkObject $ Sphere (0, 0, 2) 3.0
-                          , mkObject $ Plane  (0, 0, 0) (0, 0, 1)
-                          ]
-              , lights = []
-              }
+scene = Scene
+  { objects = [ mkObject $ Sphere (0, 0, 2) 3.0
+              , mkObject $ Plane  (0, 0, 0) (0, 0, 1)
+              ]
+  , lights = []
+  }
 
-camera = Camera { posn = ( 0.0, 0.0,  10.0 )
-                , dirn = ( 0.0, 0.0, -1.0 )
-                , up   = ( 1.0, 0.0,  0.0 )
-                , hFov = 60 * degrees
-                }
+camera = Camera
+  { posn = ( 0.0, 0.0,  10.0 )
+  , dirn = ( 0.0, 0.0, -1.0 )
+  , up   = ( 1.0, 0.0,  0.0 )
+  , hFov = 60 * degrees
+  }
 
 hCast :: AppOptions -> IO()
 hCast AppOptions { appOFile=ofile, appWidth=w, appHeight=h }
@@ -376,6 +412,8 @@ hCast AppOptions { appOFile=ofile, appWidth=w, appHeight=h }
 
 main :: IO ()
 main = do
+    runTestTT testCrossProdList
+    runTestTT testRotateList
     let opts = info (helper <*> options)
                ( fullDesc
                  <> progDesc "Render a scene using ray tracing"
