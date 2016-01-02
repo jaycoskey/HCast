@@ -1,9 +1,12 @@
-import qualified Data.List.Split as S
+-- {-# LANGUAGE : TODO #-}
+
+import Data.Function  -- For the definition of `on`
 import Options.Applicative
 
+-- ===== AppOptions =====
 data AppOptions = AppOptions
   { ofile :: String
-    , quiet :: Bool
+  , quiet :: Bool
   }
 
 -- ===== Color =====
@@ -46,11 +49,6 @@ ppm3Text config screen =
     (ppm3Header config screen) ++ (ppm3Body screen)
 
 -- ===== HCastrMain =====
-
-greet :: AppOptions -> IO ()
-greet (AppOptions name False) = putStrLn $ "Hello, " ++ name
-greet _ = return ()
-
 options :: Parser AppOptions
 options = AppOptions
     <$> strOption
@@ -63,19 +61,26 @@ options = AppOptions
           <> help "Omit logging to standard output"
         )
 
+-- TODO: Move scene information to an input file, parameterize output file, etc.
 main :: IO ()
 main = do
   let opts = info (helper <*> options)
-            ( fullDesc
-              <> progDesc "Print a greeting for TARGET"
-              <> header "hello - a test for optparse-applicative"
-            )
-  execParser opts >>= greet
+             (  fullDesc
+             <> progDesc "Render a scene using ray tracing"
+             <> header "When is this text displayed?"
+             )
+  execParser opts
   let config = AppConfig { maxColorVal = 255 }
-  let screen = Screen {
-      width = 10
-      ,height = 10
-      ,colors = take 100 $ cycle [(0,0,0), (0,0,1), (0,1,0), (0,1,1)
-                                 ,(1,0,0), (1,0,1), (1,1,0), (1,1,1)]
-      }
+  let w = 100
+  let h = 10
+  let div = (/) `on` fromIntegral
+  let getColor i j = (i `div` (w - 1), 0.5, j `div` (h - 1))
+  let screen = Screen
+                 { width = w
+                 , height = h
+                 , colors = concat
+                              $ [ [getColor i j | i <- [0 .. (w - 1)]]
+                                | j <- [0 .. (h - 1)]
+                                ]
+                 }
   writeFile "output.ppm" (ppm3Text config screen)
