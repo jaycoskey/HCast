@@ -8,6 +8,8 @@
 
 -- import System.IO
 
+import Data.List (sortBy)
+import Data.Maybe (catMaybes)
 import Debug.Trace
 import Numeric
 import Options.Applicative
@@ -30,9 +32,9 @@ data AppOptions = AppOptions
 -- ===== Camera =====
 -- TODO: Orthographic, Perspective, Fisheye cameras, etc.
 data Camera = Camera
-  { posn :: Pos3
-  , dirn :: Vec3  -- lookAt :: Pos3
-  , up   :: Vec3
+  { posn :: Pos3f
+  , dirn :: Vec3f  -- lookAt :: Pos3f
+  , up   :: Vec3f
   , hFov :: Double
   }
 
@@ -57,8 +59,8 @@ toPixel (r, g, b) = (round(255*r), round(255*g), round(255*b))
 showPixel (r, g, b) = (show r ++ " " ++ show g ++ " " ++ show b)
 
 -- ===== Geometry =====
-type Pos3 = (Double, Double, Double)
-type Vec3 = (Double, Double, Double)
+type Pos3f = (Double, Double, Double)
+type Vec3f = (Double, Double, Double)
 
 xUnit = (1.0, 0.0, 0.0)
 yUnit = (0.0, 1.0, 0.0)
@@ -70,53 +72,53 @@ yU = yUnit
 zU = zUnit
 z3 = zero3
 
-eqVec3Eps :: Vec3 -> Vec3 -> Double -> Bool
-eqVec3Eps v1 v2 epsilon = norm2 (v1 <-> v2) < epsilon
+eqVec3fEps :: Vec3f -> Vec3f -> Double -> Bool
+eqVec3fEps v1 v2 epsilon = norm2 (v1 <-> v2) < epsilon
 
 degrees = pi / 180.0
 
-debugShowVec3 (a, b, c) = "(" 
+debugShowVec3f (a, b, c) = "(" 
                        ++ (showFFloat (Just 2) a "") ++ ", "
                        ++ (showFFloat (Just 2) b "") ++ ", "
                        ++ (showFFloat (Just 2) c "") 
                        ++ ")"
 
 data Ray = Ray
-  { orig :: Pos3
-  , dir  :: Vec3
+  { orig :: Pos3f
+  , dir  :: Vec3f
   } deriving Show
 
 -- TODO! Set fixity
-(.^) :: Double -> Vec3 -> Vec3
+(.^) :: Double -> Vec3f -> Vec3f
 (.^) d (x, y, z) = (d*x, d*y, d*z)
 
-dot :: Vec3 -> Vec3 -> Double
+dot :: Vec3f -> Vec3f -> Double
 dot (x1, y1, z1) (x2, y2, z2) = (x1*x2 + y1*y2 + z1*z2)
 
-norm2 :: Vec3 -> Double
+norm2 :: Vec3f -> Double
 norm2 vec = vec `dot` vec
 
-norm :: Vec3 -> Double
+norm :: Vec3f -> Double
 norm vec = sqrt $ norm2 vec
 
-normalize :: Vec3 -> Vec3
+normalize :: Vec3f -> Vec3f
 normalize vec = (1 / (norm vec)) .^ vec
 
 -- TODO! Set fixity
-(<+>) :: Pos3 -> Vec3 -> Vec3
+(<+>) :: Pos3f -> Vec3f -> Vec3f
 (<+>) (x1, y1, z1) (x2, y2, z2) = (x1+x2, y1+y2, z1+z2)
 
-(<->) :: Pos3 -> Vec3 -> Vec3
+(<->) :: Pos3f -> Vec3f -> Vec3f
 (<->) (x1, y1, z1) (x2, y2, z2) = (x1-x2, y1-y2, z1-z2)
 
 -- Borrow operator from Data.Vec3.
-(><) :: Vec3 -> Vec3 -> Vec3
+(><) :: Vec3f -> Vec3f -> Vec3f
 (><) (x1, y1, z1) (x2, y2, z2)
     = ( y1 * z2 - y2 * z1
       , x2 * z1 - x1 * z2
       , x1 * y2 - x2 * y1)
 
-rayAtTime :: Ray -> Double -> Pos3
+rayAtTime :: Ray -> Double -> Pos3f
 rayAtTime (Ray orig dir) t = orig <+> (t .^ dir)
 
 debugShow2 x = showFFloat (Just 2) x ""
@@ -137,27 +139,27 @@ rotateAroundAxisByAngle axis angle v =
           debugStr = "Rot: "
               ++   "c="      ++ (debugShow2 c)
               ++ "; s="      ++ (debugShow2 s)
-              ++ "; nAxis="  ++ (debugShowVec3 nAxis)
+              ++ "; nAxis="  ++ (debugShowVec3f nAxis)
               ++ "; dp="     ++ (debugShow2 dp)
-              ++ "; cp="     ++ (debugShowVec3 cp)
-              ++ "; v="      ++ (debugShowVec3 v)
-              ++ "; result=" ++ (debugShowVec3 result)
+              ++ "; cp="     ++ (debugShowVec3f cp)
+              ++ "; v="      ++ (debugShowVec3f v)
+              ++ "; result=" ++ (debugShowVec3f result)
               ++ "\n"
 
 eps = 0.0001
 
 -- TODO: Use Test.HUnit.Approx
-testCrossProdX = TestCase $ assertBool "testCrossProdX" $ eqVec3Eps (yU >< zU) xU eps
-testCrossProdY = TestCase $ assertBool "testCrossProdY" $ eqVec3Eps (zU >< xU) yU eps
-testCrossProdZ = TestCase $ assertBool "testCrossProdZ" $ eqVec3Eps (xU >< yU) zU eps
+testCrossProdX = TestCase $ assertBool "testCrossProdX" $ eqVec3fEps (yU >< zU) xU eps
+testCrossProdY = TestCase $ assertBool "testCrossProdY" $ eqVec3fEps (zU >< xU) yU eps
+testCrossProdZ = TestCase $ assertBool "testCrossProdZ" $ eqVec3fEps (xU >< yU) zU eps
 testCrossProdList = TestList [ TestLabel "testCrossProdX" testCrossProdX
                              , TestLabel "testCrossProdY" testCrossProdY
                              , TestLabel "testCrossProdZ" testCrossProdZ
                              ]
 
-testRotateX = TestCase $ assertBool "testRotateX" $ eqVec3Eps (yU >< zU) xU eps
-testRotateY = TestCase $ assertBool "testRotateY" $ eqVec3Eps (zU >< xU) yU eps
-testRotateZ = TestCase $ assertBool "testRotateZ" $ eqVec3Eps (xU >< yU) zU eps
+testRotateX = TestCase $ assertBool "testRotateX" $ eqVec3fEps (yU >< zU) xU eps
+testRotateY = TestCase $ assertBool "testRotateY" $ eqVec3fEps (zU >< xU) yU eps
+testRotateZ = TestCase $ assertBool "testRotateZ" $ eqVec3fEps (xU >< yU) zU eps
 testRotateList = TestList [ TestLabel "testRotateX" testRotateX
                           , TestLabel "testRotateY" testRotateY
                           , TestLabel "testRotateZ" testRotateZ
@@ -166,12 +168,12 @@ testRotateList = TestList [ TestLabel "testRotateX" testRotateX
 debugShowCrossProduct v1 v2 = testResultStr
   where
     result    = v1 >< v2
-    v1Str     = debugShowVec3 v1
-    v2Str     = debugShowVec3 v2
-    resultStr = debugShowVec3 result
-    testResultStr = "Cross product of " ++ (debugShowVec3 v1)
-                    ++ " with "         ++ (debugShowVec3 v2)
-                    ++ " = "            ++ (debugShowVec3 result)
+    v1Str     = debugShowVec3f v1
+    v2Str     = debugShowVec3f v2
+    resultStr = debugShowVec3f result
+    testResultStr = "Cross product of " ++ (debugShowVec3f v1)
+                    ++ " with "         ++ (debugShowVec3f v2)
+                    ++ " = "            ++ (debugShowVec3f result)
 
 debugShowCrossProducts = testResultStr
   where
@@ -183,10 +185,10 @@ debugShowCrossProducts = testResultStr
 debugShowRotation axis deg v = testResultStr
   where
     angle     = deg * degrees
-    axisStr   = debugShowVec3 axis
-    vStr      = debugShowVec3 v
+    axisStr   = debugShowVec3f axis
+    vStr      = debugShowVec3f v
     result    = rotateAroundAxisByAngle axis angle v
-    resultStr = debugShowVec3 result
+    resultStr = debugShowVec3f result
     testResultStr = "Result of rotating " ++ vStr
                     ++ " around " ++ axisStr
                     ++ " through an angle of " ++ (show deg) ++ " degrees"
@@ -220,9 +222,11 @@ ppm3Text config screen =
     (ppm3Header config screen) ++ (ppm3Body screen)
 
 -- ===== Light =====
+type Fov = Double
+
 data Light = AmbientLight Color
-           | Spotlight    Color Pos3 Vec3
-           | PointLight   Color Pos3
+           | Spotlight    Color Pos3f Vec3f
+           | PointLight   Color Pos3f
 
 -- ===== Math =====
 minQuadraticRoot :: Double -> Double -> Double -> Maybe Double
@@ -241,18 +245,42 @@ minQuadraticRoot a b c
 
 -- ===== Object =====
 type DummyType = Int             -- TODO: Remove placeholder after features implemented.
-type Transformation = DummyType  -- TODO: Implement
 type Material = Color            -- TODO: Implement
-type Intersection = Color        -- TODO: Implement (HACK: For now, identify intersection w/ pixel color there)
+type Transformation = DummyType  -- TODO: Implement
+dummyTransformation = 1 :: Transformation
 
-data Object = Object Shape Material Transformation Intersection
+type Distance = Double
+type Time     = Double
+data Intersection = Intersection
+  { ray      :: Ray
+  , distance :: Distance
+  , point    :: Pos3f 
+  , normal   :: Vec3f
+  , color    :: Color
+  -- , material :: Material
+  }
+
+cmpDistance :: Intersection -> Intersection -> Ordering
+cmpDistance int1@Intersection { ray=_
+                              , distance=dist1
+                              , point=_
+                              , normal=_
+                              , color=_
+                              }
+            int2@Intersection { ray=_
+                              , distance=dist2
+                              , point=_
+                              , normal=_
+                              , color=_
+                              }
+    | dist1 < dist2 = LT
+    | otherwise     = GT
+
+data Object = Object Shape Material Transformation -- Intersection
 
 -- TODO!  Remove hack
-mkShape :: Object -> Shape
-mkShape (Object shape _ _ _) = shape
-
-mkObject :: Shape -> Object
-mkObject shape = Object shape red 1 red
+mkObject :: Shape -> Color -> Object
+mkObject shape color = Object shape color dummyTransformation -- dummyIntersection
 
 -- ===== Scene =====
 -- TODO: Convert to scene graph, as in Coin3D and FEI's OpenInventor.
@@ -273,28 +301,28 @@ data Screen = Screen
 
 -- ===== Shape =====
 type Radius = Double
-type Normal = Vec3
-type Axis   = Vec3
+type Normal = Vec3f
+type Axis   = Vec3f
 type Mesh   = Int  -- TODO: Implement
 
-data Shape = Sphere        Pos3 Radius
-           | Plane       Pos3 Normal
+data Shape = Sphere       Pos3f Radius
+           | Plane        Pos3f Normal
 
-           | Cone        Pos3 Radius Axis
-           | Cylinder    Pos3 Radius Axis
-           | PolygonMesh Pos3 Mesh  -- For now, Solid object only
-           | Torus       Pos3 Float Float  -- major radius, minor radius
+           | Cone         Pos3f Radius Axis
+           | Cylinder     Pos3f Radius Axis
+           | PolygonMesh  Pos3f Mesh  -- For now, Solid object only
+           | Torus        Pos3f Float Float  -- major radius, minor radius
 
-           | Tetrahedron  Pos3  -- TODO: Document default orientation
-           | Cube         Pos3  -- TODO: Document default orientation
-           | Octahedron   Pos3  -- TODO: Document default orientation
-           | Dodecahedron Pos3  -- TODO: Document default orientation
-           | Icosahedron  Pos3  -- TODO: Document default orientation
+           | Tetrahedron  Pos3f  -- TODO: Document default orientation
+           | Cube         Pos3f  -- TODO: Document default orientation
+           | Octahedron   Pos3f  -- TODO: Document default orientation
+           | Dodecahedron Pos3f  -- TODO: Document default orientation
+           | Icosahedron  Pos3f  -- TODO: Document default orientation
 
            -- TODO: Move CSG feature into Scene graph
-           | CsgDiff     Shape Shape
-           | CsgSymDiff  Shape Shape
-           | CsgUnion    Shape Shape
+           | CsgDiff      Shape Shape
+           | CsgSymDiff   Shape Shape
+           | CsgUnion     Shape Shape
 
 isBounded :: Shape -> Bool
 isBounded (Plane _ _) = False
@@ -304,21 +332,43 @@ isSolid :: Shape -> Bool
 isSolid (Plane _ _) = False
 isSolid _ = True
 
-intersect :: Shape -> Ray -> Maybe Intersection
-intersect (Sphere pos rad) (Ray { orig=orig, dir=dir }) =
-    case (maybeIntersectTime) of
-        Just root -> if root > 0 then Just red else Nothing
-        Nothing   -> Nothing
-    where
-        delta = orig <-> pos
-        a = dir `dot` dir
-        b = 2 * (dir `dot` delta)
-        c = (delta `dot` delta) - rad*rad
-        maybeIntersectTime = minQuadraticRoot a b c
+intersect :: Object -> Ray -> Maybe Intersection
+intersect
+    obj@( Object
+              shape@(Sphere center rad)
+              objColor
+              -- objMaterial
+              objXform
+        )
+    ray@(Ray { orig=orig, dir=dir })
+      = case (maybeIntersectTime) of
+          Just time -> if time > 0
+                       then Just Intersection
+                            { ray      = ray
+                            , distance = time * norm(dir)
+                            , point    = intersectionPoint
+                            , normal   = normalize(intersectionPoint <-> center)
+                            , color    = objColor
+                            }
+                       else Nothing
+                       where
+                           intersectionPoint  = center <+> (time .^ dir)
+          Nothing   -> Nothing
+        where
+          delta = orig <-> center
+          a = dir `dot` dir
+          b = 2 * (dir `dot` delta)
+          c = (delta `dot` delta) - rad*rad
+          maybeIntersectTime = minQuadraticRoot a b c
 
-intersect (Plane pos norm) (Ray { orig=orig, dir=dir }) =
-    -- TODO: Complete
-    Nothing
+intersect
+    obj@(Object (Plane pos norm)
+                objColor
+                -- objMaterial
+                objXform
+        )
+    (Ray { orig=orig, dir=dir }) =
+        Nothing  -- TODO: Complete
 
 intersect _ _ = Nothing
 
@@ -327,7 +377,7 @@ debugShowScreenCoords w h i j = "Width: "     ++ (show i) ++ "/" ++ (show w) ++ 
                                 ++ "Height: " ++ (show j) ++ "/" ++ (show h)
 
 debugDecoratedShow pre a post =
-    pre ++ (debugShowVec3 a) ++ post
+    pre ++ (debugShowVec3f a) ++ post
 
 options :: Parser AppOptions
 options = 
@@ -352,14 +402,34 @@ options =
         )
 
 getColor :: Scene -> Camera -> Int -> Int -> Int -> Int -> Color
-getColor
-  (Scene  { objects=objs, lights=lux })
-  (Camera { posn=camPos, dirn=camDir, up=camUp, hFov=camHFov })
-  w h i j
-    = case maybeIntersection of  -- TODO: Replace w/ actual impl.
-          Just color -> color
-          Nothing    -> black
+getColor scene cam w h i j =
+    case maybeIntersection of
+        Just Intersection { ray=_
+                          , distance=_
+                          , point=_
+                          , normal=_
+                          , color=color
+                          } -> color
+        Nothing    -> black
+      where 
+        maybeIntersection = getFirstIntersection scene cam w h i j
+
+getFirstIntersection :: Scene -> Camera -> Int -> Int -> Int -> Int -> Maybe Intersection
+getFirstIntersection scene cam w h i j =
+    if (length intersections == 0)
+    then Nothing
+    else Just $ head (sortBy cmpDistance intersections)
       where
+        intersections = getIntersections scene cam w h i j
+
+getIntersections :: Scene -> Camera -> Int -> Int -> Int -> Int -> [Intersection]
+getIntersections 
+    (Scene  { objects=objs, lights=lux })
+    (Camera  { posn=camPos, dirn=camDir, up=camUp, hFov=camHFov })
+    w h i j
+
+    = catMaybes maybeIntersections
+        where
           h_d = (fromIntegral h) :: Double 
           w_d = (fromIntegral w) :: Double
           i_d = (fromIntegral i) :: Double 
@@ -376,16 +446,16 @@ getColor
           debugText = (debugShowScreenCoords w h i j) ++ "\n"
                         ++ (debugDecoratedShow "Ray: orig=" camPos "; ")
                         ++ (debugDecoratedShow       "dir=" eyeDir "\n")
-          headObj = head objs  -- HACK
-          targetShape = mkShape headObj
-          maybeIntersection = intersect targetShape ray
+          maybeIntersections = map (\obj -> intersect obj ray) objs
 
-scene = Scene
-  { objects = [ mkObject $ Sphere (0, 0, 2) 3.0
-              , mkObject $ Plane  (0, 0, 0) (0, 0, 1)
-              ]
-  , lights = []
-  }
+scene = Scene { objects = [ mkObject (Sphere (-2.0,-2.0, 2.0) 1.5) red
+                          , mkObject (Sphere (-2.0, 2.0, 2.0) 1.5) green
+                          , mkObject (Sphere ( 2.0,-2.0, 2.0) 1.5) blue
+                          , mkObject (Sphere ( 2.0, 2.0, 2.0) 1.5) white
+                          , mkObject (Plane  (0, 0, 0) (0, 0, 1))  red
+                          ]
+              , lights = []
+              }
 
 camera = Camera
   { posn = ( 0.0, 0.0,  10.0 )
