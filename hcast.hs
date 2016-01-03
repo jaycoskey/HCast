@@ -1,6 +1,3 @@
-
-import Geometry
-
 import Data.List (sortBy)
 import Data.Maybe (catMaybes)
 -- import Debug.Trace (trace)
@@ -10,9 +7,11 @@ import Test.HUnit (runTestTT)
 import App
 import Camera 
 import Color 
+import Geometry
 import Image 
 import Light 
 import Object 
+import Platonic (testPlatonicList)
 import Scene 
 import Screen
 import Shape 
@@ -126,18 +125,18 @@ hCast AppOptions { appOFile=ofile, appWidth=w, appHeight=h }
 main :: IO ()
 main = do
     runTestTT testCrossProdList
-    runTestTT testRotateList 
+    runTestTT testRotateList
+    -- runTestTT testPlatonic
+    runTestTT testPlatonicList
     -- putStrLn "testCrossProdX"
     -- putStrLn $ show $ eqVec3Eps (yU >< zU) xU eps
     -- putStrLn "testCrossProdY"
     -- putStrLn $ show $ eqVec3Eps (zU >< xU) yU eps
     -- putStrLn "testCrossProdZ"
     -- putStrLn $ show $ eqVec3Eps (xU >< yU) zU eps
-
     let opts = info (helper <*> options)
                ( fullDesc
                  <> progDesc "Render a scene using ray tracing"
                  <> header "When is this text displayed?"
                )
     execParser opts >>= hCast
-
