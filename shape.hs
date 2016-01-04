@@ -22,9 +22,10 @@ data Shape = Sphere        Pos3f Radius
              | Icosahedron  Pos3f  -- TODO: Document default orientation
 
              -- TODO: Move CSG feature into Scene graph
-             | CsgDiff     Shape Shape
-             | CsgSymDiff  Shape Shape
-             | CsgUnion    Shape Shape
+             | CsgIntersection Shape Shape
+             | CsgUnion        Shape Shape
+             | CsgDiff         Shape Shape
+             | CsgSymDiff      Shape Shape
 
 isBounded :: Shape -> Bool
 isBounded (Plane _ _) = False
