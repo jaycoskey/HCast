@@ -1,13 +1,13 @@
-module Math (minQuadraticRoot) where
+module Math (quadraticRoots) where
 
-minQuadraticRoot :: Double -> Double -> Double -> Maybe Double
-minQuadraticRoot a b c
-    | (isZero a) && (isZero b) = Nothing
-    | (isZero a) && (isPos  b) = Just (-c / b)
-    | isPos disc               = Just (min ((-b+sqrtDisc)/(2*a))
-                                           ((-b-sqrtDisc)/(2*a))
-                                      )
-    | otherwise                = Nothing
+quadraticRoots :: Double -> Double -> Double -> [Double]
+quadraticRoots a b c
+    | (isZero a) && (isZero b) = []
+    | (isZero a) && (isPos  b) = [-c / b]
+    | isPos disc               = [ (-b+sqrtDisc) / (2*a)
+                                 , (-b-sqrtDisc) / (2*a)
+                                 ]
+    | otherwise                = []
     where disc     = b**2 - 4*a*c
           sqrtDisc = sqrt disc
           eps      = 0.0001  -- TODO: Revisit

@@ -18,7 +18,7 @@ data Intersection = Intersection
                     , point    :: Pos3f 
                     , normal   :: Vec3f
                     , color    :: Color
-                    -- , material :: Material
+                    , material :: Material
                     }
 
 cmpDistance :: Intersection -> Intersection -> Ordering
@@ -27,12 +27,14 @@ cmpDistance int1@Intersection { ray=_
                               , point=_
                               , normal=_
                               , color=_
+                              , material=_
                               }
             int2@Intersection{ ray=_
                               , distance=dist2
                               , point=_
                               , normal=_
                               , color=_
+                              , material=_
                               }
     | dist1 < dist2 = LT
     | otherwise     = GT
@@ -52,25 +54,28 @@ intersect
       )
   ray@(Ray { orig=orig, dir=dir })
   =
-    case (maybeIntersectTime) of
-        Just time -> if time > 0
-                     then Just Intersection
-                          { ray      = ray
-                          , distance = time * norm(dir)
-                          , point    = intersectionPoint
-                          , normal   = normalize(intersectionPoint <-> center)
-                          , color    = objColor
-                          }
-                     else Nothing
-                     where
-                       intersectionPoint  = center <+> (time .^ dir)
-        Nothing   -> Nothing
+    case (intersectTimes) of
+        [time] -> Just Intersection
+                      { ray      = ray
+                      , distance = time * norm(dir)
+                      , point    = intersectionPoint
+                      , normal   = normalize(intersectionPoint <-> center)
+                      , color    = objColor
+                      , material = objMaterial
+                      }
+                    where
+                      intersectionPoint  = center <+> (time .^ dir)
+        [] -> Nothing
     where
         delta = orig <-> center
         a = dir `dot` dir
         b = 2 * (dir `dot` delta)
         c = (delta `dot` delta) - rad*rad
-        maybeIntersectTime = minQuadraticRoot a b c
+        roots = quadraticRoots a b c
+        posRoots = filter (> 0) roots
+        intersectTimes = if (length posRoots <= 1)
+                         then posRoots
+                         else [min (posRoots!!0) (posRoots!!1)]
 
 intersect obj@(Object
                  (Plane pos norm)
