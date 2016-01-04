@@ -13,7 +13,8 @@
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<hcast>
+ 
+<hcast version="0.1">
   <scene backgroundColor="black" maxDepth="3">
     <object name="sphere1">
       <shape type="sphere" center="1,1,0", radius="2.0" />
@@ -29,32 +30,36 @@
           <translation x="0" y="1.2" z="3.5"/>
           <rotate radians="2*pi" axis="1,1,0" />
         </object>
-        <object type="sphere" name="sphere3">
+        <object name="sphere3">
+          <shape type="sphere" center="3,3,0", radius="1.0" />
           <scale x="1.5" y="0.5" z="2.1" />
           <translate x="0" y="0" z="1.2" />
           <rotate degrees="30.0" x="1" y="1" z="0" />
-      </object>
+        </object>
+      </intersection>
     </object>
-  </scene>
 
-  <camera name="camera1" type="perspective" enabled="true">
-    <position x="0.0" y="0.0" z="0.0" />
-    <direction x="1.0" y="2.0" z="3.0" />
-    <target x="0.0" y="20.0" z="0.0" />
-    <up x="0.0" y="0.0" z="1.0" />
-    <hFov value="40.0" />
-  </camera>
+    <camera name="camera1" type="perspective" enabled="true">
+      <position  x="0.0" y= "0.0" z="0.0" />
+      <direction x="1.0" y= "2.0" z="3.0" />
+      <target    x="0.0" y="20.0" z="0.0" />
+      <up        x="0.0" y= "0.0" z="1.0" />
+      <hFov value="40.0" />
+    </camera>
 
-  <light name="lux1" type="ambient">
-    <color name="gray10"
-  </light>
-  <light name="lux1" type="spotlight">
-    <position x="0.0" y="0.0" z="0.0" />
-    <direction x="2.0" y="0.0" z="0.0" />
-  </light>
-  <light name="lux2" type="spotlight" enabled="false">
-      <position x="0.0" y="2.0" z="0.0" />
+    <light name="lux1" type="ambient">
+      <color name="gray10" />
+    </light>
+    <light name="lux1" type="spotlight">
+      <position  x="0.0" y="0.0" z="0.0" />
+      <direction x="2.0" y="0.0" z="0.0" />
+      <color name="green" />
+    </light>
+    <light name="lux2" type="spotlight" enabled="false">
+      <position  x="0.0" y= "2.0" z="0.0" />
       <direction x="0.0" y="-1.0" z="0.0" />
-  </light>
+      <color name="cyan" />
+    </light>
+  </scene>
 </hcast>
 ```
