@@ -10,6 +10,12 @@ import Color
 import Light
 import Shape
  
+vec3sToVec3f :: (String, String, String) -> (Double, Double, Double)
+vec3sToVec3f (sx, sy, sz) = ( (read sx) :: Double
+                            , (read sy) :: Double
+                            , (read sz) :: Double
+                            )
+
 data Scene = Scene
   { backgroundColor :: Color
   , maxDepth        :: Int
@@ -29,7 +35,7 @@ type Name = String
 
 data ObjectBase = ObjectBase
   { name   :: String
-    ,color  :: Color
+  , color  :: Color
     -- TODO: xforms :: [Transform]  -- Scale, Translate, and Rotate
   }
   deriving (Show)
@@ -114,15 +120,12 @@ getObject = atTag "object" >>>
                     RawObject (
                                 ObjectBase
                                   { name  = objName
-                                  , color = ((read colorR) :: Double, (read colorG) :: Double, (read colorB) :: Double)
+                                  , color = vec3sToVec3f (colorR, colorG, colorB)
                                   }
                               )
                               (
                                 Sphere
-                                  ( (read centerX) :: Double
-                                  , (read centerY) :: Double
-                                  , (read centerZ) :: Double
-                                  )
+                                  (vec3sToVec3f (centerX, centerY, centerZ))
                                   ((read shapeRadius) :: Double)
                               )
 
@@ -159,9 +162,9 @@ getCamera = atTag "camera" >>>
                       -- , camType   = camType
                       -- , enabled   = camEnabled
                       -- ,
-                        posn = (read camPosX, read camPosY, read camPosZ) :: (Double, Double, Double)
-                      , dirn = (read camDirX, read camDirY, read camDirZ) :: (Double, Double, Double)
-                      , up   = (read camUpX,  read camUpY,  read camUpZ)  :: (Double, Double, Double)
+                        posn = vec3sToVec3f (camPosX, camPosY, camPosZ)
+                      , dirn = vec3sToVec3f (camDirX, camDirY, camDirZ)
+                      , up   = vec3sToVec3f ( camUpX,  camUpY,  camUpZ)
                       , hFov = (read camHFov) :: Double
                       }
 
@@ -185,10 +188,10 @@ getLight = atTag "light" >>>
     lightDirZ    <- getAttrValue "z"       -< direction
     returnA -< -- if lightType == "spotlight"
                -- then
-               Spotlight ((read colorR)    :: Double, (read colorG)    :: Double, (read colorB)    :: Double)
-                         ((read lightPosX) :: Double, (read lightPosY) :: Double, (read lightPosZ) :: Double)
-                         ((read lightDirX) :: Double, (read lightDirY) :: Double, (read lightDirZ) :: Double)
- 
+               Spotlight (vec3sToVec3f (colorR, colorG, colorB))
+                         (vec3sToVec3f (lightPosX, lightPosY, lightPosZ))
+                         (vec3sToVec3f (lightDirX, lightDirY, lightDirZ))
+
 main = do
-  scene <- runX (parseXML "sceneFileTest.xml" >>> getScene)
-  print scene
+    scene <- runX (parseXML "sceneFileTest.xml" >>> getScene)
+    print scene
