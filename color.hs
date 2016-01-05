@@ -18,4 +18,3 @@ yellow  = (1.0, 1.0, 0.0)
 
 toPixel   (r, g, b) = (round(255*r), round(255*g), round(255*b))
 showPixel (r, g, b) = (show r ++ " " ++ show g ++ " " ++ show b)
-

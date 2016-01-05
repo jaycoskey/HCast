@@ -1,9 +1,18 @@
 module App where
 
+import Color
+
 -- ===== AppConfig =====
 data AppConfig = AppConfig
-    { maxColorVal :: Int
+    { backgroundColor :: Color
+    , maxColorVal :: Int
+    , maxDepth    :: Int
     }
+
+appConfig = AppConfig { backgroundColor = black
+                      , maxColorVal = 255
+                      , maxDepth = 0
+                      }
 
 -- ===== AppOptions =====
 data AppOptions = AppOptions
@@ -12,4 +21,3 @@ data AppOptions = AppOptions
     , appHeight :: Int
     -- , quiet :: Bool
     }
-

@@ -10,8 +10,8 @@ import Color
 import Light
 import Shape
  
-vec3sToVec3f :: (String, String, String) -> (Double, Double, Double)
-vec3sToVec3f (sx, sy, sz) = ( (read sx) :: Double
+vec3sToVec3d :: (String, String, String) -> (Double, Double, Double)
+vec3sToVec3d (sx, sy, sz) = ( (read sx) :: Double
                             , (read sy) :: Double
                             , (read sz) :: Double
                             )
@@ -120,12 +120,12 @@ getObject = atTag "object" >>>
                     RawObject (
                                 ObjectBase
                                   { name  = objName
-                                  , color = vec3sToVec3f (colorR, colorG, colorB)
+                                  , color = vec3sToVec3d (colorR, colorG, colorB)
                                   }
                               )
                               (
                                 Sphere
-                                  (vec3sToVec3f (centerX, centerY, centerZ))
+                                  (vec3sToVec3d (centerX, centerY, centerZ))
                                   ((read shapeRadius) :: Double)
                               )
 
@@ -162,9 +162,9 @@ getCamera = atTag "camera" >>>
                       -- , camType   = camType
                       -- , enabled   = camEnabled
                       -- ,
-                        posn = vec3sToVec3f (camPosX, camPosY, camPosZ)
-                      , dirn = vec3sToVec3f (camDirX, camDirY, camDirZ)
-                      , up   = vec3sToVec3f ( camUpX,  camUpY,  camUpZ)
+                        posn = vec3sToVec3d (camPosX, camPosY, camPosZ)
+                      , dirn = vec3sToVec3d (camDirX, camDirY, camDirZ)
+                      , up   = vec3sToVec3d ( camUpX,  camUpY,  camUpZ)
                       , hFov = (read camHFov) :: Double
                       }
 
@@ -188,9 +188,9 @@ getLight = atTag "light" >>>
     lightDirZ    <- getAttrValue "z"       -< direction
     returnA -< -- if lightType == "spotlight"
                -- then
-               Spotlight (vec3sToVec3f (colorR, colorG, colorB))
-                         (vec3sToVec3f (lightPosX, lightPosY, lightPosZ))
-                         (vec3sToVec3f (lightDirX, lightDirY, lightDirZ))
+               Spotlight (vec3sToVec3d (colorR, colorG, colorB))
+                         (vec3sToVec3d (lightPosX, lightPosY, lightPosZ))
+                         (vec3sToVec3d (lightDirX, lightDirY, lightDirZ))
 
 main = do
     scene <- runX (parseXML "sceneFileTest.xml" >>> getScene)

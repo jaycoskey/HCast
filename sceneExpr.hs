@@ -1,4 +1,5 @@
--- module SceneExpr where
+module SceneExpr where
+
 -- Note: Contains some sample code from wiki.haskell.org.
 
 -- First steps toward an expression parser to be used in a ray tracer scene file
@@ -125,7 +126,7 @@ statement' =   ifStmt
 ifStmt :: Parser Stmt
 ifStmt =
   do reserved "if"
-     cond  <- boolExpression
+     cond  <- boolExpr
      reserved "then"
      stmt1 <- statement
      reserved "else"
@@ -135,7 +136,7 @@ ifStmt =
 whileStmt :: Parser Stmt
 whileStmt =
   do reserved "while"
-     cond <- boolExpression
+     cond <- boolExpr
      reserved "do"
      stmt <- statement
      return $ While cond stmt
@@ -144,17 +145,17 @@ assignStmt :: Parser Stmt
 assignStmt =
   do var  <- identifier
      reservedOp ":="
-     expr <- arithExpression
+     expr <- arithExpr
      return $ Assign var expr
  
 skipStmt :: Parser Stmt
 skipStmt = reserved "skip" >> return Skip
 
-arithExpression :: Parser ArithExpr
-arithExpression = buildExpressionParser arithOperators arithTerm
+arithExpr :: Parser ArithExpr
+arithExpr = buildExpressionParser arithOperators arithTerm
  
-boolExpression :: Parser BoolExpr
-boolExpression = buildExpressionParser boolOperators boolTerm
+boolExpr :: Parser BoolExpr
+boolExpr = buildExpressionParser boolOperators boolTerm
 
 arithOperators =
     [ [ Prefix (reservedOp "-"   >> return (Neg                 ))
@@ -175,19 +176,19 @@ boolOperators =
       ]
     ]
 
-arithTerm =   parens arithExpression
+arithTerm =   parens arithExpr
           <|> liftM Var identifier
           <|> liftM IntConst integer
 
-boolTerm =   parens boolExpression
+boolTerm =   parens boolExpr
          <|> (reserved "true"  >> return (BoolConst True ))
          <|> (reserved "false" >> return (BoolConst False))
-         <|> relExpression
+         <|> relExpr
 
-relExpression =
-  do a1 <- arithExpression
+relExpr =
+  do a1 <- arithExpr
      op <- relOpExpr
-     a2 <- arithExpression
+     a2 <- arithExpr
      return $ RelBinary op a1 a2
  
 relOpExpr =   (reservedOp "<" >> return LessThan)
@@ -212,7 +213,7 @@ parseFile file =
 
 -- ast <- parseFile "<filename>"
 
-main :: IO ()
-main = do
+-- main :: IO ()
+-- main = do
     -- putStrLn "Hello, world"
-    putStrLn $ show $ parseString "x:=hello"
+    -- putStrLn $ show $ parseString "x:=hello"

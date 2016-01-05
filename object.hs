@@ -15,8 +15,8 @@ type Time     = Double
 data Intersection = Intersection
                     { ray      :: Ray
                     , distance :: Distance
-                    , point    :: Pos3f 
-                    , normal   :: Vec3f
+                    , point    :: Pos3d
+                    , normal   :: Vec3d
                     , color    :: Color
                     , material :: Material
                     }
@@ -88,4 +88,3 @@ intersect obj@(Object
     Nothing
 
 intersect _ _ = Nothing
-

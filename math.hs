@@ -13,4 +13,3 @@ quadraticRoots a b c
           eps      = 0.0001  -- TODO: Revisit
           isPos x  = x > eps
           isZero x = abs x < eps
-

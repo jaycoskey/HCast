@@ -3,29 +3,30 @@ module Shape where
 import Geometry
 
 type Radius = Double
-type Normal = Vec3f
-type Axis   = Vec3f
+type Normal = Vec3d
+type Axis   = Vec3d
 type Mesh   = Int  -- TODO: Implement
 
-data Shape = Sphere        Pos3f Radius
-             | Plane       Pos3f Normal
+data Shape = Sphere        Pos3d Radius
+             | Plane       Pos3d Normal
 
-             | Cone        Pos3f Radius Axis
-             | Cylinder    Pos3f Radius Axis
-             | PolygonMesh Pos3f Mesh  -- For now, Solid object only
-             | Torus       Pos3f Double Double -- major radius, minor radius
+             | Cone        Pos3d Radius Axis
+             | Cylinder    Pos3d Radius Axis
+             | PolygonMesh Pos3d Mesh  -- For now, Solid object only
+             | Torus       Pos3d Double Double -- major radius, minor radius
 
-             | Tetrahedron  Pos3f  -- TODO: Document default orientation
-             | Cube         Pos3f  -- TODO: Document default orientation
-             | Octahedron   Pos3f  -- TODO: Document default orientation
-             | Dodecahedron Pos3f  -- TODO: Document default orientation
-             | Icosahedron  Pos3f  -- TODO: Document default orientation
+             | Tetrahedron  Pos3d  -- TODO: Document default orientation
+             | Cube         Pos3d  -- TODO: Document default orientation
+             | Octahedron   Pos3d  -- TODO: Document default orientation
+             | Dodecahedron Pos3d  -- TODO: Document default orientation
+             | Icosahedron  Pos3d  -- TODO: Document default orientation
 
              -- TODO: Move CSG feature into Scene graph
              | CsgIntersection Shape Shape
              | CsgUnion        Shape Shape
              | CsgDiff         Shape Shape
              | CsgSymDiff      Shape Shape
+             deriving (Show)
 
 isBounded :: Shape -> Bool
 isBounded (Plane _ _) = False
@@ -34,4 +35,3 @@ isBounded _ = True
 isSolid :: Shape -> Bool
 isSolid (Plane _ _) = False
 isSolid _ = True
-

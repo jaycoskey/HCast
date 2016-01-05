@@ -1,18 +1,17 @@
-
-import Geometry
-
 import Data.List (sortBy)
 import Data.Maybe (catMaybes)
 -- import Debug.Trace (trace)
 import Options.Applicative 
 import Test.HUnit (runTestTT)
 
-import App
+import qualified App
 import Camera
 import Color
+import Geometry
 import Image
 import Light
 import Object
+import Platonic
 import Scene
 import SceneExpr
 import Screen
@@ -26,9 +25,9 @@ debugShowScreenCoords w h i j = "Width: "     ++ (show i) ++ "/" ++ (show w) ++ 
 debugDecoratedShow pre a post =
     pre ++ (debugShowVec3 a) ++ post
 
-options :: Parser AppOptions
+options :: Parser App.AppOptions
 options = 
-    AppOptions
+    App.AppOptions
       <$> strOption
         ( long "output"
           <> short 'o' 
@@ -48,69 +47,49 @@ options =
           -- <> help "Height of the output file"
         )
 
-
 getColor :: Scene -> Camera -> Depth
          -> Int -> Int -> Int -> Int -> Color
-getColor scene cam d w h i j =
-    case maybeIntersection of
-        Just intersection -> getCombinedColor intersection
-        Nothing           -> black
+getColor scene cam depth w h i j =
+    if depth > maxDepth
+    then backgroundColor
+    else case maybeIntersection of
+           -- TODO: Move to a more concise representation?  Lenses?
+           Just intersection@Intersection
+                  { ray=_
+                  , distance=_
+                  , point=_
+                  , normal=_
+                  , color=intersectionColor
+                  , material=_
+                  }       -> intersectionColor
+           Nothing        -> black
       where 
-        maybeIntersection = getFirstIntersection scene cam d w h i j
-        getPointColor intersection@Intersection 
-                             { ray=_
-                             , distance=_
-                             , point=_
-                             , normal=_
-                             , color=pointColor
-                             , material=_
-                             }
-                          = pointColor
-        reflectedRay =
-        getReflectedColor intersection@Intersection 
-                             { ray=_
-                             , distance=_
-                             , point=_
-                             , normal=_
-                             , color=pointColor
-                             , material=_
-                             }
-                          = getColor scene cam (d+1) w h i j
-        getRefractedColor intersection@Intersection 
-                             { ray=_
-                             , distance=_
-                             , point=_
-                             , normal=_
-                             , color=pointColor
-                             , material=_
-                             }
-                          = getColor scene cam (d+1) w h i j
-        refractedRay =
-        getCombinedColor intersection@Intersection
-                             { ray=_
-                             , distance=_
-                             , point=_
-                             , normal=_
-                             , color=pointColor
-                             , material=_
-                             }
-                          = getColor scene cam (d+1) w h i j
+        maxDepth          = App.maxDepth App.appConfig
+        backgroundColor   = App.backgroundColor App.appConfig
+        maybeIntersection = getFirstIntersection scene cam depth w h i j
+        -- TODO: reflectedRay
+        -- TODO: refractedRay
+        -- TODO: reflectedColor = getColor scene cam (depth + 1) w h i j
+        -- TODO: refractedColor = getColor scene cam (depth + 1) w h i j
+        -- TODO: combinedColor  = getColor scene cam (depth + 1) w h i j
+
+dummyInt = 0
 
 getFirstIntersection :: Scene -> Camera -> Depth 
                      -> Int -> Int -> Int -> Int -> Maybe Intersection
-getFirstIntersection scene cam d w h i j =
+getFirstIntersection scene cam depth w h i j =
     if (length intersections == 0)
     then Nothing
     else Just $ head (sortBy cmpDistance intersections)
       where
-        intersections = getIntersections scene cam w h i j
-
+        intersections = getIntersections scene cam depth w h i j
 
 getIntersections :: Scene -> Camera -> Depth
                  -> Int -> Int -> Int -> Int -> [Intersection]
 getIntersections 
     (Scene  { objects=objs, lights=lux })
     (Camera  { posn=camPos, dirn=camDir, up=camUp, hFov=camHFov })
+    depth
     w h i j
     = catMaybes maybeIntersections
         where
@@ -138,11 +117,8 @@ scene = Scene { objects  = [ mkObject (Sphere (-2.0,-2.0, 2.0) 1.5) red
                            , mkObject (Sphere ( 0.0, 0.0, 4.0) 1.5) white
                            , mkObject (Plane  (0, 0, 0) (0, 0, 1))  red
                            ]
-              , lights   = [PointLight { position =( 5.0,  5.0, 2.0)
-                                       , direction=(-5.0, -5.0, 0.0)
-                                       }
-                           ]
-              , ambient  = (0.5, 0.0, 0.0) 
+              , lights   = [ PointLight white (5.0, 5.0, 2.0) ]
+              , ambient  = (0.5, 0.0, 0.0)
               }
 
 camera = Camera { posn = ( 0.0, 0.0, 10.0 )
@@ -151,17 +127,16 @@ camera = Camera { posn = ( 0.0, 0.0, 10.0 )
                 , hFov = 60 * degrees
                 }
 
-hCast :: AppOptions -> IO()
-hCast AppOptions { appOFile=ofile, appWidth=w, appHeight=h }
-  = writeFile ofile (ppm3Text config screen)
+hCast :: App.AppOptions -> IO()
+hCast App.AppOptions { App.appOFile=ofile, App.appWidth=w, App.appHeight=h }
+  = writeFile ofile (ppm3Text App.appConfig screen)
       where
-        config = AppConfig { maxColorVal = 255 }
         screen = -- trace debugShowCrossProducts -- debugShowRotations
                  Screen { width  = w
                         , height = h
                         , colors = concat
                                      [
-                                       [ getColor scene camera w h i j
+                                       [ getColor scene camera 0 w h i j
                                            | i <- [0 .. (w - 1)]
                                        ]   | j <- [0 .. (h - 1)]
                                      ]
@@ -171,6 +146,7 @@ main :: IO ()
 main = do
     runTestTT testCrossProdList
     runTestTT testRotateList 
+    runTestTT testPlatonicList
     -- putStrLn "testCrossProdX"
     -- putStrLn $ show $ eqVec3Eps (yU >< zU) xU eps
     -- putStrLn "testCrossProdY"
@@ -184,4 +160,3 @@ main = do
                  <> header "When is this text displayed?"
                )
     execParser opts >>= hCast
-
